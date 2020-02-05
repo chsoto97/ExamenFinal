@@ -3,8 +3,12 @@ let bodyParser = require( 'body-parser' );
 let mongoose = require( 'mongoose' );
 let jsonParser = bodyParser.json();
 let { DATABASE_URL, PORT } = require( './config' );
+let {MovieList} = require('./model');
+let morgan = require('morgan');
 
 let app = express();
+
+app.use(morgan('dev'));
 
 app.use(function(req, res, next) {
 	res.header("Access-Control-Allow-Origin", "*");
@@ -16,7 +20,33 @@ app.use(function(req, res, next) {
 	next();
 });
 
-/* Tu código va aquí */
+app.get('/api/moviedex', (req, res)=>{
+	MovieList.getAll()
+		.then((result) =>{
+			return res.status(200).json(result);
+		})
+		.catch((err)=>{
+			res.statusMessage = "No se pudo conectar a la base de datos."
+			return res.status(500).send();
+		});
+});
+
+app.post('/api/moviedex', jsonParser, (req, res) =>{
+	let newMovie = req.body;
+	if(newMovie.film_title&&newMovie.year&&newMovie.rating){
+		MovieList.addMovie(newMovie)
+			.then((result)=>{
+				return res.status(201).json(result);
+			})
+			.catch((err)=>{
+				res.statusMessage = "No se pudo conectar a la base de datos."
+				return res.status(500).send();
+			});
+	} else {
+		res.statusMessage = "Faltan parámetros"
+		return res.status(406).send();
+	}
+});
 
 let server;
 
